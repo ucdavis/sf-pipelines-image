@@ -1,8 +1,15 @@
 name: Build and push image
 
-# Phase 1, step 2: build, smoke test, then push to GHCR.
+# Phase 1, step 3: build, smoke test, then push to GHCR.
 # The smoke test runs before the push, so a broken image never gets published.
+#
+# Triggers:
+#   - pushing a tag matching v* (the normal release path)
+#   - manual dispatch with an explicit tag (for one-off or POC builds)
 on:
+  push:
+    tags:
+      - "v*"
   workflow_dispatch:
     inputs:
       tag:
@@ -22,6 +29,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Validate tag input
+        if: github.event_name == 'workflow_dispatch'
         env:
           TAG: ${{ inputs.tag }}
         run: |
@@ -42,11 +50,19 @@ jobs:
         with:
           # GHCR requires a lowercase path.
           images: ghcr.io/ucdavisiet/sf-pipelines
+          # type=ref,event=tag publishes the git tag verbatim. Deliberately not
+          # type=semver: a semver pattern silently produces no tag for anything
+          # that does not parse as semver (e.g. "v1.8"), and both Bitbucket
+          # pipelines pin exact tags, so verbatim is what we want.
           tags: |
-            type=raw,value=${{ inputs.tag }}
+            type=ref,event=tag
+            type=raw,value=${{ inputs.tag }},enable=${{ github.event_name == 'workflow_dispatch' }}
           labels: |
             org.opencontainers.image.title=sf-pipelines
             org.opencontainers.image.description=SiteFarm CI runner image for Bitbucket Pipelines (PHP 8.3, Apache, Chromium, Composer)
+          # Never publish :latest — consumers pin exact tags.
+          flavor: |
+            latest=false
 
       - name: Build image
         uses: docker/build-push-action@v6

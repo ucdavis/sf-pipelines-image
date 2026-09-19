@@ -1,0 +1,91 @@
+#!/bin/bash
+
+# This script first installs cypress, and saves it in a way it can be cached. If it finds a cached version
+# it will check if the config files are the same as the cached version, and if so, use the cached version,
+# Otherwise reinstall it.
+# Then it will run cypress tests and save failed tests in a json file. If tests failed, it will re-run these
+# tests with video, and upload those as artifacts.
+
+
+echo "====================================="
+echo "Cypress Installation"
+echo "====================================="
+# Create a hash of the files in here
+cd $DOCROOT/profiles/sitefarm/tests/cypress
+
+# Bitbucket will cache the ~/.cache/Cypress folder.
+
+# Only look in the root dir of cypress for changes.
+# This uses all files in the root directory to create a hash of the contents.
+SHASUM_CYPRESS=$(find . -maxdepth 1 -type f -print0  | sort -z | xargs -0 sha1sum | sha1sum | xargs)
+SHASUM_CYPRESS_OLD=$(cat $HOME/.cache/Cypress/sf_cypress_hash | xargs || true)
+
+echo "Current cypress SHASUM: $SHASUM_CYPRESS"
+echo "Cached cypress SHASUM: $SHASUM_CYPRESS_OLD"
+
+# If the hash is not the same as the one from cache, we compile cypress.
+if [[ "$SHASUM_CYPRESS" != "$SHASUM_CYPRESS_OLD" ]]; then
+  echo "Installing Cypress...."
+  npm install
+  npm ci
+
+  # Store the hash in cache for later use.
+  echo $SHASUM_CYPRESS > $HOME/.cache/Cypress/sf_cypress_hash
+  # Cache the output, this will be stored as cache in pipelines.
+  cp -rf node_modules $HOME/.cache/Cypress
+else
+  echo "Loaded compiled Cypress from cache"
+  # Copy the cached Cypress install.
+  mkdir -p node_modules
+  cp -rf $HOME/.cache/Cypress/node_modules/. node_modules
+fi
+
+echo "====================================="
+echo "PHP version: $(php -v)"
+echo "====================================="
+echo "Cypress Run"
+echo "====================================="
+
+cd $DOCROOT/profiles/sitefarm/tests/cypress
+#set exit code to 0 (passed)
+SFEXIT=0
+
+npm run test:ci -- --browser chromium
+
+# If cypress failed, save the result of the failure.
+if [ "$?" -ne "0" ]; then
+  sf_bb_post_status "FAILED" "cypress" "Cypress Tests" ""
+  SFEXIT=1
+else
+  sf_bb_post_status "SUCCESSFUL" "cypress" "Cypress Tests" ""
+fi
+
+# Look for a failed.json file and run tests that have failed attempts with video.
+if test -f failed.json; then
+    echo ""
+    echo "====================================="
+    echo "Debugging failed/flaky cypress tests:"
+    echo $(cat "failed.json")
+    echo "====================================="
+
+    URL="https://bitbucket.org/${BITBUCKET_WORKSPACE}/${BITBUCKET_REPO_SLUG}/pipelines/results/${BITBUCKET_BUILD_NUMBER}/steps/${BITBUCKET_STEP_UUID}/artifacts#"
+    sf_bb_post_status "INPROGRESS" "cypress_a" "Cypress Artifacts" $URL
+
+    # Run cypress for every test that failed.
+    jq --raw-output -c '.[]' failed.json | while read i; do
+      npm run test:ci-e2e -- --browser chromium --spec "$i" --config '{"video":true, "retries":0}'
+    done
+
+    # Copy the videos and screenshots.
+    mkdir -p $ROOT_DIR/cypress/videos
+    mkdir -p $ROOT_DIR/cypress/screenshots
+
+    cp -rf $DOCROOT/profiles/sitefarm/tests/cypress/videos $ROOT_DIR/cypress/
+    cp -rf $DOCROOT/profiles/sitefarm/tests/cypress/screenshots $ROOT_DIR/cypress/
+
+    sf_bb_post_status "SUCCESSFUL" "cypress_a" "Cypress Artifacts" $URL
+fi
+
+# Use the first exit code we got from the first cypress test.
+# This way the second run can fail without triggering pipelines.
+exit $SFEXIT

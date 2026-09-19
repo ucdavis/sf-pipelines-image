@@ -1,0 +1,21 @@
+#!/bin/bash
+
+set -eo pipefail
+
+STATUS=$1
+KEY=$2
+NAME=$3
+URL=$4
+
+# If we supply an empty string as url, use the Pipelines Step url.
+if [ ${#URL} -lt 3 ]; then
+ URL="https://bitbucket.org/${BITBUCKET_WORKSPACE}/${BITBUCKET_REPO_SLUG}/pipelines/results/${BITBUCKET_BUILD_NUMBER}/steps/${BITBUCKET_STEP_UUID}"
+fi
+
+curl --silent --output /dev/null \
+  --request POST \
+  --url https://api.bitbucket.org/2.0/repositories/${BITBUCKET_WORKSPACE}/${BITBUCKET_REPO_SLUG}/commit/${BITBUCKET_COMMIT}/statuses/build \
+  --header "Authorization: Bearer ${BITBUCKET_TOKEN}" \
+  --header 'Accept: application/json' \
+  --header 'Content-Type: application/json' \
+  --data "{\"url\": \"${URL}\",\"state\": \"${STATUS}\",\"key\": \"${KEY}\", \"name\": \"${NAME}\"}"

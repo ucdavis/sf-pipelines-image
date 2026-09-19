@@ -1,0 +1,43 @@
+name: Build image
+
+# Phase 1, step 1: build only, no push. Proves the vendored sources build on a
+# clean runner and that the resulting image passes the smoke test.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Disk space before build
+        run: df -h /
+
+      - name: Build image (no push)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: .ci/docker-image/Dockerfile
+          # Bitbucket Pipelines runs x86_64. ubuntu-latest is amd64, so this is
+          # a native build with no QEMU emulation.
+          platforms: linux/amd64
+          push: false
+          load: true
+          tags: sf-pipelines:ci
+
+      - name: Image size
+        run: docker image ls sf-pipelines:ci --format '{{.Repository}}:{{.Tag}} {{.Size}}'
+
+      - name: Smoke test
+        run: ./test/smoke.sh sf-pipelines:ci
+
+      - name: Disk space after build
+        run: df -h /

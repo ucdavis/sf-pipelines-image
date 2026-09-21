@@ -33,12 +33,12 @@ git push origin v1.8.4-php84
 
 The [Build and push image](.github/workflows/build-push.yml) workflow builds for
 `linux/amd64`, runs `test/smoke.sh` against the built image, and only then pushes
-to `ghcr.io/ucdavis/sf-pipelines:<tag>`. A failing smoke test means nothing is
-published.
+the exact version tag and `ghcr.io/ucdavis/sf-pipelines:latest`. A failing smoke
+test means nothing is published.
 
-The git tag is used verbatim as the image tag, and `:latest` is never published —
-both Bitbucket pipelines pin exact tags, so a floating tag would only invite
-accidents.
+The git tag is used verbatim as the versioned image tag. The same tested image is
+also published as `:latest`; consumers that need a stable reference should
+continue to pin an exact version tag.
 
 You can also build a one-off from the Actions tab via **Run workflow**, supplying
 the tag as an input. Useful for POC or scratch builds without creating a git tag.

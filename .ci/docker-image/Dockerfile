@@ -34,7 +34,7 @@ RUN apt update >/dev/null; \
     # Cleanup
     apt clean; rm -rf /var/lib/apt/lists/*;
 
-# Install PHP 8.3 repo
+# Install PHP 8.4 repo
 RUN curl -sSLo /tmp/debsuryorg-archive-keyring.deb https://packages.sury.org/debsuryorg-archive-keyring.deb; \
     dpkg -i /tmp/debsuryorg-archive-keyring.deb; \
     echo "deb [signed-by=/usr/share/keyrings/deb.sury.org-php.gpg] https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list; \
@@ -42,11 +42,11 @@ RUN curl -sSLo /tmp/debsuryorg-archive-keyring.deb https://packages.sury.org/deb
     apt clean; rm -rf /var/lib/apt/lists/*; rm -rf /tmp/deb*;
 
 # PHP/Apache/MariaDB packages
-RUN apt update; apt install -y libapache2-mod-php8.3 mariadb-client apache2 php8.3-cli php8.3-imagick php8.3-apcu php8.3-common php8.3-curl php8.3-gd php8.3-mbstring php8.3-mysql php8.3-opcache php8.3-readline php8.3-sqlite3 php8.3-xml php8.3-zip php8.3-tokenizer php8.3-xml php8.3-zip; \
+RUN apt update; apt install -y libapache2-mod-php8.4 mariadb-client apache2 php8.4-cli php8.4-imagick php8.4-apcu php8.4-common php8.4-curl php8.4-gd php8.4-mbstring php8.4-mysql php8.4-opcache php8.4-readline php8.4-sqlite3 php8.4-xml php8.4-zip php8.4-tokenizer php8.4-xml php8.4-zip; \
     # Cleanup
     apt clean; rm -rf /var/lib/apt/lists/*; rm -rf /tmp/deb*; \
     # Apache/PHP settings
-    a2enmod headers rewrite deflate php8.3;
+    a2enmod headers rewrite deflate php8.4;
 
 # Install Composer 2.
 RUN curl -fsSL "https://github.com/composer/composer/releases/download/${COMPOSER_VERSION}/composer.phar" -o /bin/composer; \

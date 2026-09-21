@@ -4,7 +4,7 @@
 #
 # Usage:  ./test/smoke.sh <image-ref>
 # Example: ./test/smoke.sh sf-pipelines:local
-#          ./test/smoke.sh ghcr.io/ucdavisiet/sf-pipelines:v1.8.4-poc
+#          ./test/smoke.sh ghcr.io/ucdavis/sf-pipelines:v1.8.4-php84
 #
 # Exits 0 only if every assertion passes. WARN lines are advisory and do not
 # affect the exit code; they flag pre-existing quirks carried over from the
@@ -51,12 +51,12 @@ have() {
 
 section() { printf '\n--- %s\n' "$1"; }
 
-section "PHP 8.3"
+section "PHP 8.4"
 PHP_V="$(php -v 2>/dev/null | head -1)"
 case "$PHP_V" in
-  "PHP 8.3."*) ok "PHP CLI is 8.3 ($PHP_V)" ;;
-  "")          bad "PHP CLI is 8.3 (php not found)" ;;
-  *)           bad "PHP CLI is 8.3 (got: $PHP_V)" ;;
+  "PHP 8.4."*) ok "PHP CLI is 8.4 ($PHP_V)" ;;
+  "")          bad "PHP CLI is 8.4 (php not found)" ;;
+  *)           bad "PHP CLI is 8.4 (got: $PHP_V)" ;;
 esac
 
 PHP_MODS="$(php -m 2>/dev/null | tr '[:upper:]' '[:lower:]')"
@@ -90,7 +90,7 @@ else
   bad "$SF_INI present"
 fi
 
-# Advisory: this Debian/sury PHP scans /etc/php/8.3/*/conf.d, not the
+# Advisory: this Debian/sury PHP scans /etc/php/8.4/*/conf.d, not the
 # /usr/local/etc/php/conf.d path the Dockerfile writes to, so the settings above
 # may not actually be applied. Carried over from the original image; reported,
 # not failed.

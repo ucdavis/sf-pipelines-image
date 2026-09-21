@@ -5,7 +5,7 @@
 > a developer laptop. Nothing in `sitefarm-acquia` or `sitefarm` points here yet.
 
 Standalone build for the SiteFarm CI runner image, published to
-`ghcr.io/ucdavisiet/sf-pipelines` by GitHub Actions.
+`ghcr.io/ucdavis/sf-pipelines` by GitHub Actions.
 
 ## What this image is
 
@@ -15,7 +15,7 @@ sets it as the top-level `image:`, so every pipeline step (Drupal Installation,
 Stage Environment, Cypress Tests) runs inside it. One image, one tag, no per-env
 variants. The `sitefarm` repo pins the same tag.
 
-Contents: Debian bookworm-slim, PHP 8.3 (packages.sury.org), Apache 2, Chromium +
+Contents: Debian bookworm-slim, PHP 8.4 (packages.sury.org), Apache 2, Chromium +
 Xvfb for Cypress, MariaDB client, Composer 2.8.2, npm, Python 3, and assorted CLI
 tools. The `sf_*` helper commands are baked into `/bin`.
 
@@ -27,13 +27,13 @@ a GitHub-hosted runner takes about 3.5 minutes.
 Push a `v*` git tag. That is the whole release process:
 
 ```bash
-git tag v1.8.6
-git push origin v1.8.6
+git tag v1.8.4-php84
+git push origin v1.8.4-php84
 ```
 
 The [Build and push image](.github/workflows/build-push.yml) workflow builds for
 `linux/amd64`, runs `test/smoke.sh` against the built image, and only then pushes
-to `ghcr.io/ucdavisiet/sf-pipelines:<tag>`. A failing smoke test means nothing is
+to `ghcr.io/ucdavis/sf-pipelines:<tag>`. A failing smoke test means nothing is
 published.
 
 The git tag is used verbatim as the image tag, and `:latest` is never published —
@@ -51,7 +51,7 @@ here. Create one at <https://github.com/settings/tokens>, then:
 
 ```bash
 echo "$GHCR_PAT" | docker login ghcr.io -u <your-github-username> --password-stdin
-docker pull --platform=linux/amd64 ghcr.io/ucdavisiet/sf-pipelines:v1.8.5-poc
+docker pull --platform=linux/amd64 ghcr.io/ucdavis/sf-pipelines:v1.8.4-php84
 ```
 
 If you already use the `gh` CLI with a token carrying `read:packages`, this works
@@ -92,13 +92,13 @@ To poke around inside, using the same resource limits Bitbucket Pipelines applie
 ```bash
 docker run -p 8080:80 -it --memory=3g --memory-swap=4g --cpus=4 \
   --platform=linux/amd64 --entrypoint=/bin/bash \
-  ghcr.io/ucdavisiet/sf-pipelines:v1.8.5-poc
+  ghcr.io/ucdavis/sf-pipelines:v1.8.4-php84
 ```
 
 ### `test/smoke.sh`
 
 Takes an image reference and exits non-zero if any assertion fails. It checks PHP
-8.3 and its extensions, Apache modules and the vhost, Composer 2.8.2, Chromium,
+8.4 and its extensions, Apache modules and the vhost, Composer 2.8.2, Chromium,
 the expected CLI tooling, the baked `sf_*` commands, locale, the pipelines paths
 (`ROOT_DIR`/`DOCROOT`), and that the architecture is x86_64.
 
@@ -111,7 +111,7 @@ below.
 - **`99-sitefarm.ini` is dead config.** The Dockerfile copies `conf/php.ini` to
   `/usr/local/etc/php/conf.d/99-sitefarm.ini`, which is the path convention of the
   official `php` Docker images. This image installs Debian/sury PHP, which scans
-  `/etc/php/8.3/cli/conf.d` instead. Inside the container, `memory_limit` is `-1`
+  `/etc/php/8.4/cli/conf.d` instead. Inside the container, `memory_limit` is `-1`
   and `opcache.enable_cli` is `Off` — not the `1G` and `1` the file specifies. The
   same is true of the image currently in production. Composer is unaffected
   because it gets `COMPOSER_MEMORY_LIMIT=4G` from an env var. Fixing this changes

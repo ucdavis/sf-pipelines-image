@@ -13,9 +13,9 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Image tag to publish (e.g. v1.8.4-poc)"
+        description: "Image tag to publish (e.g. v1.8.4-php84)"
         required: true
-        default: v1.8.4-poc
+        default: v1.8.4-php84
 
 permissions:
   contents: read
@@ -59,7 +59,7 @@ jobs:
             type=raw,value=${{ inputs.tag }},enable=${{ github.event_name == 'workflow_dispatch' }}
           labels: |
             org.opencontainers.image.title=sf-pipelines
-            org.opencontainers.image.description=SiteFarm CI runner image for Bitbucket Pipelines (PHP 8.3, Apache, Chromium, Composer)
+            org.opencontainers.image.description=SiteFarm CI runner image for Bitbucket Pipelines (PHP 8.4, Apache, Chromium, Composer)
           # Never publish :latest — consumers pin exact tags.
           flavor: |
             latest=false
